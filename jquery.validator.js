@@ -26,6 +26,7 @@
 $.fn.validator = function(options, formats) {
 
     var
+        form    = this,
         $form   = $(this),
         $inputs = $form.find('input,select,textarea');
 
@@ -95,19 +96,19 @@ $.fn.validator = function(options, formats) {
         },
 
         // 检验前执行
-        before: function($ele) { return true; },
+        before: function() { return true; },
 
         // 是否错误
         isError: function() { return false; },
 
         // 错误处理
-        error: function($ele, message) { },
+        error: function(message) { },
 
         // 成功处理
-        success: function($ele) { },
+        success: function() { },
 
         // 检验后执行
-        after: function($ele, isSucceed) { },
+        after: function(isSucceed) { },
 
         // 表单提交前
         beforeSubmit: function(event) { return true; },
@@ -125,43 +126,45 @@ $.fn.validator = function(options, formats) {
     // 绑定检验事件
     $inputs.on('validate', function(){
 
-        var $this = $(this),
+        var
+            self = this,
+            $self = $(this),
 
-        error = function($ele, message) {
-            $ele.addClass(config.errclass);
-            config.error($ele, message);
-            config.after($ele, false);
+        error = function(message) {
+            $self.addClass(config.errclass);
+            config.error.call(self, message);
+            config.after.call(self, false);
         };
 
         // 检测之前执行
-        if ( ! config.before($this)) {
+        if (! config.before.call(self)) {
             return false;
         }
 
         // 检测空值
-        if ($this.data('require') && ! config.formats['require'].apply(this)) {
-            return error($this, $this.data('require'));
+        if ($self.data('require') && ! config.formats['require'].call(self)) {
+            return error($self.data('require'));
         }
 
         for (var key in config.formats) {
-            if (this.value != '' && $this.data(key)) {
+            if (self.value != '' && $self.data(key)) {
                 // 函数校验
                 if (typeof config.formats[key] == 'function') {
-                    var parsed = config.parse($this.data(key));
-                    if (! config.formats[key].apply(this, parsed.args)) {
-                        return error($this, parsed.message);
+                    var parsed = config.parse($self.data(key));
+                    if (! config.formats[key].apply(self, parsed.args)) {
+                        return error(parsed.message);
                     }
                 // 正则检验
-                } else if (! config.formats[key].test(this.value)) {
-                    return error($this, $this.data(key));
+                } else if (! config.formats[key].test(self.value)) {
+                    return error($self.data(key));
                 }
             }
         }
 
-        $this.removeClass(config.errclass);
+        $self.removeClass(config.errclass);
 
-        config.success($this);
-        config.after($this, true);
+        config.success.call(self);
+        config.after.call(self, true);
     });
 
     // 绑定表单提交
@@ -170,9 +173,10 @@ $.fn.validator = function(options, formats) {
 
         var
             $errors = $inputs.filter('.' + config.errclass),
-            $first  = $errors.filter(':first');
+            $first  = $errors.filter(':first'),
+            isError = config.beforeSubmit.call(form, event) && $errors.length === 0 && ! config.isError.call(form);
 
-        if ($errors.length > 0 || config.isError()) {
+        if ($errors.length > 0) {
             if ($first.is(':hidden')) {
                 $(document).scrollTop($first.offset().top - 50); // 滚动到第一个错误控件附近
             } else {
@@ -187,7 +191,7 @@ $.fn.validator = function(options, formats) {
             }
         }
 
-        return config.beforeSubmit(event) && $errors.length === 0 && ! config.isError() && config.submit(event);
+        return isError && config.submit.call(form, event);
     });
 
     // 绑定控件事件
