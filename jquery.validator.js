@@ -68,6 +68,15 @@ $.fn.validator = function(options, formats) {
             require: function() {
                 return $.trim(this.value) != '';
             },
+            regex: function() {
+                // 避免正则中逗号分割，使用 arguments 重新组装正则
+                var args = new Array();
+                for (key in arguments) {
+                    args.push(arguments[key]);
+                }
+
+                return eval(args.join(',')).test(this.value);
+            },
             max: function(maxVal, selector) {
                 if (maxVal == 'selector') {
                     maxVal = $(maxVal).val();
