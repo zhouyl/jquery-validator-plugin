@@ -4,7 +4,7 @@
  * @example HTML
  *      <form>
  *          <input type="text" name="val1"
- *                 data-require="is require"
+ *                 data-required="is required"
  *                 data-less="5,less than 5" />
  *          <input type="text" name="val2"
  *                 data-match="selector,[name=val1],match val1"
@@ -14,9 +14,9 @@
  * @example JavaScript
  *      $form.validator({
  *          before:       function() { return boolVal; },
- *          isError:      function($ele, message) { return hasError; },
- *          error:        function($ele, message) { alert(message); },
- *          success:      function($ele) { },
+ *          isError:      function(message) { return hasError; },
+ *          error:        function(message) { alert(message); },
+ *          success:      function() {},
  *          beforeSubmit: function() { return boolVal; },
  *          submit:       function() { },
  *      }, {
@@ -25,12 +25,13 @@
  */
 $.fn.validator = function(options, formats) {
 
-    var
-        form    = this,
-        $form   = $(this),
+    var form = this,
+        $form = $(this),
         $inputs = $form.find('input,select,textarea');
 
-    if (! $form.is('form') || $inputs.length === 0) { return false; }
+    if (!$form.is('form') || $inputs.length === 0) {
+        return false;
+    }
 
     var config = $.extend({
 
@@ -44,28 +45,34 @@ $.fn.validator = function(options, formats) {
         parse: function(str) {
             var args = str.split(',');
             if (args.length > 1) {
-                return {message : args.pop(), args : args};
+                return {
+                    message: args.pop(),
+                    args: args
+                };
             }
-            return {message : str, args : []};
+            return {
+                message: str,
+                args: []
+            };
         },
 
         // 检验方法
-        formats : {
-            alnum:    /^[a-z0-9]+$/i,
-            alpha:    /^[a-z]+$/i,
-            lower:    /^[a-z]+$/,
-            upper:    /^[A-Z]+$/,
-            word:     /^\w+$/,
-            number:   /^[\+\-]?[\d\.]+$/,
-            url:      /^https?:\/\/([a-z0-9\-]+\.)+[a-z]{2,3}([a-z0-9_~#%&\/\'\+\=\:\?\.\-])*$/i,
-            date:     /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/,
+        formats: {
+            alnum: /^[a-z0-9]+$/i,
+            alpha: /^[a-z]+$/i,
+            lower: /^[a-z]+$/,
+            upper: /^[A-Z]+$/,
+            word: /^\w+$/,
+            number: /^[\+\-]?[\d\.]+$/,
+            url: /^https?:\/\/([a-z0-9\-]+\.)+[a-z]{2,3}([a-z0-9_~#%&\/\'\+\=\:\?\.\-])*$/i,
+            date: /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/,
             datetime: /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}\s+\d{1,2}(:\d{1,2}){1,2}$/,
-            email:    /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/,
+            email: /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/,
             password: /^.{6,30}$/,
             nickname: /^[^\'\"\:;,\<\>\?\/\\\*\=\+\{\}\[\]\)\(\^%\$#\!`\s]+$/,
-            phone:    /^[\d\-]{5,}$/,
-            mobile:   /^\d{8,11}$/,
-            require: function() {
+            phone: /^[\d\- ]{5,}$/,
+            mobile: /^\d{8,13}$/,
+            required: function() {
                 return $.trim(this.value) != '';
             },
             regex: function() {
@@ -77,53 +84,68 @@ $.fn.validator = function(options, formats) {
 
                 return eval(args.join(',')).test(this.value);
             },
-            max: function(maxVal, selector) {
-                if (maxVal == 'selector') {
-                    maxVal = $(maxVal).val();
+            max: function(max, selector) {
+                if (max == 'selector') {
+                    max = $(max).val();
                 }
-                return parseFloat(maxVal) > parseFloat(this.value);
+                return parseFloat(max) >= parseFloat(this.value);
             },
-            min: function(minVal, selector) {
-                if (minVal == 'selector') {
-                    minVal = $(selector).val();
+            min: function(min, selector) {
+                if (min == 'selector') {
+                    min = $(selector).val();
                 }
-                return parseFloat(minVal) < parseFloat(this.value);
+                return parseFloat(min) <= parseFloat(this.value);
             },
-            range: function(minVal, maxVal) {
+            range: function(min, max) {
                 var val = parseFloat(this.value);
-                return val >= parseFloat(minVal) && val <= parseFloat(maxVal);
+                return val >= parseFloat(min) && val <= parseFloat(max);
             },
-            match: function(matchVal, selector) {
-                if (matchVal == 'selector') {
-                    matchVal = $(selector).val();
+            match: function(val, selector) {
+                if (val == 'selector') {
+                    val = $(selector).val();
                 }
-                return matchVal == this.value;
+                return val == this.value;
             },
-            length: function(length) {
-                return this.value.length <= length;
+            minlen: function(min) {
+                return $.trim(this.value).length <= min;
+            },
+            maxlen: function(min) {
+                return $.trim(this.value).length <= min;
+            },
+            length: function(min, max) {
+                var len = $.trim(this.value).length;
+                return len >= parseInt(min) && len <= parseInt(max);
             }
         },
 
         // 检验前执行
-        before: function() { return true; },
+        before: function() {
+            return true;
+        },
 
         // 是否错误
-        isError: function() { return false; },
+        isError: function() {
+            return false;
+        },
 
         // 错误处理
-        error: function(message) { },
+        error: function(message) {},
 
         // 成功处理
-        success: function() { },
+        success: function() {},
 
         // 检验后执行
-        after: function(isSucceed) { },
+        after: function(isSucceed) {},
 
         // 表单提交前
-        beforeSubmit: function(event) { return true; },
+        beforeSubmit: function(event) {
+            return true;
+        },
 
         // 表单提交
-        submit: function(event) { return true; }
+        submit: function(event) {
+            return true;
+        }
 
     }, options);
 
@@ -133,38 +155,36 @@ $.fn.validator = function(options, formats) {
     }
 
     // 绑定检验事件
-    $inputs.on('validate', function(){
+    $inputs.on('validate', function() {
 
-        var
-            self = this,
+        var self = this,
             $self = $(this),
-
-        error = function(message) {
-            $self.addClass(config.errclass);
-            config.error.call(self, message);
-            config.after.call(self, false);
-        };
+            error = function(message) {
+                $self.addClass(config.errclass);
+                config.error.call(self, message);
+                config.after.call(self, false);
+            };
 
         // 检测之前执行
-        if (! config.before.call(self)) {
+        if (!config.before.call(self)) {
             return false;
         }
 
         // 检测空值
-        if ($self.data('require') && ! config.formats['require'].call(self)) {
-            return error($self.data('require'));
+        if ($self.data('required') && !config.formats['required'].call(self)) {
+            return error($self.data('required'));
         }
 
         for (var key in config.formats) {
-            if (self.value != '' && $self.data(key)) {
+            if ((self.value != '' || key == 'match') && $self.data(key)) {
                 // 函数校验
                 if (typeof config.formats[key] == 'function') {
                     var parsed = config.parse($self.data(key));
-                    if (! config.formats[key].apply(self, parsed.args)) {
+                    if (!config.formats[key].apply(self, parsed.args)) {
                         return error(parsed.message);
                     }
-                // 正则检验
-                } else if (! config.formats[key].test(self.value)) {
+                    // 正则检验
+                } else if (!config.formats[key].test(self.value)) {
                     return error($self.data(key));
                 }
             }
@@ -180,10 +200,9 @@ $.fn.validator = function(options, formats) {
     $form.on('submit', function(event) {
         $inputs.trigger('validate');
 
-        var
-            $errors = $inputs.filter('.' + config.errclass),
+        var $errors = $inputs.filter('.' + config.errclass),
             $first  = $errors.filter(':first'),
-            isError = config.beforeSubmit.call(form, event) && $errors.length === 0 && ! config.isError.call(form);
+            isError = config.beforeSubmit.call(form, event) && $errors.length === 0 && !config.isError.call(form);
 
         if ($errors.length > 0) {
             if ($first.is(':hidden')) {
@@ -198,6 +217,8 @@ $.fn.validator = function(options, formats) {
                     $errors.toggleClass(config.errclass, i % 2);
                 }, (i + 1) * 100);
             }
+
+            $errors.addClass(config.errclass);
         }
 
         return isError && config.submit.call(form, event);
@@ -209,5 +230,7 @@ $.fn.validator = function(options, formats) {
             $(this).trigger('validate');
         });
     }
+
+    return $form;
 
 };
