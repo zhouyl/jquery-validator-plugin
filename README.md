@@ -1,8 +1,8 @@
-#jquery-validator-plugin
+# jquery-validator-plugin
 
-###表单自动验证辅助助手
+### 表单自动验证辅助助手
 
-####HTML Example
+#### HTML Example
 
 ```html
 <form>
@@ -11,7 +11,7 @@
 </form>
 ```
 
-####JavaScript Example
+#### JavaScript Example
 ```javascript
 $form.validator({
     before:       function() { return boolVal; },
